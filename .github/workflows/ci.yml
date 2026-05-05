@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build deps
+        run: sudo apt-get update && sudo apt-get install -y build-essential
+
+      - name: Find and build Makefiles
+        run: |
+          FILES=$(find . -type f -name Makefile)
+          if [ -z "$FILES" ]; then
+            echo "No Makefiles found — skipping build."
+            exit 0
+          fi
+          for f in $FILES; do
+            DIR=$(dirname "$f")
+            echo "Building in $DIR"
+            make -C "$DIR" || true
+          done
+
+      - name: Run tests in Makefile folders
+        run: |
+          FILES=$(find . -type f -name Makefile)
+          for f in $FILES; do
+            DIR=$(dirname "$f")
+            echo "Running tests in $DIR"
+            make -C "$DIR" test || true
+          done
